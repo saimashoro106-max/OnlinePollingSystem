@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - AI Polling System{% endblock %}
+
+{% block content %}
+<h2 class="text-center mb-4">
+    <i class="fas fa-shield-alt"></i> Admin Dashboard
+</h2>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x mb-3"></i>
+                <h2>{{ total_users }}</h2>
+                <p class="mb-0">Total Users</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-poll fa-3x mb-3"></i>
+                <h2>{{ total_polls }}</h2>
+                <p class="mb-0">Total Polls</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-vote-yea fa-3x mb-3"></i>
+                <h2>{{ total_votes }}</h2>
+                <p class="mb-0">Total Votes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark shadow">
+            <div class="card-body text-center">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <h2>{{ total_comments }}</h2>
+                <p class="mb-0">Total Comments</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reported Comments -->
+{% if reported_comments %}
+<div class="card shadow-lg border-0 mb-4">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Reported Comments ({{ reported_comments|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Comment</th>
+                        <th>Poll</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in reported_comments %}
+                        <tr>
+                            <td>{{ comment.commenter.name }}</td>
+                            <td>{{ comment.comment_text[:50] }}{% if comment.comment_text|length > 50 %}...{% endif %}</td>
+                            <td>
+                                <a href="{{ url_for('view_poll', poll_id=comment.poll_id) }}"
+                                   target="_blank">View Poll</a>
+                            </td>
+                            <td>{{ comment.timestamp.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin_delete_comment', comment_id=comment.id) }}"
+                                      style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Delete this comment?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Recent Polls -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-poll"></i> Recent Polls</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Creator</th>
+                                <th>Votes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for poll in recent_polls %}
+                                <tr>
+                                    <td>{{ poll.title[:30] }}{% if poll.title|length > 30 %}...{% endif %}</td>
+                                    <td>{{ poll.creator.name }}</td>
+                                    <td><span class="badge bg-primary">{{ poll.votes|length }}</span></td>
+                                    <td>
+                                        <a href="{{ url_for('view_poll', poll_id=poll.id) }}"
+                                           class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('admin_delete_poll', poll_id=poll.id) }}"
+                                              style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Delete this poll and all its data?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if not recent_polls %}
+                    <p class="text-center text-muted">No polls yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Recent Users</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Joined</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                                <tr>
+                                    <td>
+                                        {{ user.name }}
+                                        {% if user.is_admin %}
+                                            <span class="badge bg-danger">Admin</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.created_at.strftime('%b %d, %Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if not recent_users %}
+                    <p class="text-center text-muted">No users yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Charts -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Platform Analytics</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="analyticsChart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Analytics Chart
+    const ctx = document.getElementById('analyticsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Users', 'Polls', 'Votes', 'Comments'],
+            datasets: [{
+                label: 'Platform Statistics',
+                data: [{{ total_users }}, {{ total_polls }}, {{ total_votes }}, {{ total_comments }}],
+                backgroundColor: [
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(72, 187, 120, 0.8)',
+                    'rgba(66, 153, 225, 0.8)',
+                    'rgba(237, 137, 54, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(102, 126, 234)',
+                    'rgb(72, 187, 120)',
+                    'rgb(66, 153, 225)',
+                    'rgb(237, 137, 54)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Overall Platform Activity',
+                    font: {
+                        size: 16
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

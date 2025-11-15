@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        {% if not user %}
+        <div class="card mb-3 border-primary">
+            <div class="card-body text-center">
+                <h5>Verify Email to Vote</h5>
+                <input type="email" class="form-control mb-2" id="email" placeholder="your@email.com">
+                <button class="btn btn-primary" onclick="verify()">Verify</button>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3>{{ poll.question }}</h3>
+                {% if poll.show_creator %}<small>by {{ poll.creator_name }}</small>{% endif %}
+            </div>
+            <div class="card-body">
+                {% if user and not has_voted %}
+                {% for option in poll.options %}
+                <div class="border rounded p-3 mb-2" onclick="select({{ option.id }})">
+                    <input type="radio" name="opt" id="opt{{ option.id }}" value="{{ option.id }}">
+                    <label for="opt{{ option.id }}">{{ option.option_text }}</label>
+                </div>
+                {% endfor %}
+                <button class="btn btn-success w-100 mt-3" onclick="submitVote()">Vote</button>
+                {% elif has_voted %}
+                <p>You already voted. <a href="{{ url_for('results', poll_id=poll.id) }}">See results</a></p>
+                {% else %}
+                <p>Verify your email above to vote.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function select(id) { document.getElementById('opt' + id).checked = true; }
+function submitVote() {
+    const sel = document.querySelector('input[name="opt"]:checked');
+    if (!sel) { alert('Select an option'); return; }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("vote", poll_id=poll.id) }}';
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'option_id';
+    inp.value = sel.value;
+    form.appendChild(inp);
+    document.body.appendChild(form);
+    form.submit();
+}
+function verify() {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("verify_email") }}';
+    const e = document.createElement('input');
+    e.type = 'hidden';
+    e.name = 'email';
+    e.value = document.getElementById('email').value;
+    form.appendChild(e);
+    const p = document.createElement('input');
+    p.type = 'hidden';
+    p.name = 'poll_id';
+    p.value = '{{ poll.id }}';
+    form.appendChild(p);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Home - AI Polling System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="text-center mb-4">
+            <i class="fas fa-poll-h"></i> Discover & Share Opinions
+        </h1>
+        <p class="text-center text-muted">Create polls, vote, and see real-time results with AI-powered sentiment analysis</p>
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <form method="GET" action="{{ url_for('index') }}" class="d-flex">
+            <input type="text" name="search" class="form-control search-box me-2"
+                   placeholder="Search polls by title or description..."
+                   value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" onchange="window.location.href='?sort=' + this.value + '{% if current_category %}&category={{ current_category }}{% endif %}'">
+            <option value="trending" selected>🔥 Trending</option>
+            <option value="recent">🕐 Most Recent</option>
+        </select>
+    </div>
+</div>
+
+<!-- Categories -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h5><i class="fas fa-tags"></i> Categories:</h5>
+        <a href="{{ url_for('index') }}" class="category-badge {% if not current_category %}active{% endif %}">
+            All
+        </a>
+        {% for cat in categories %}
+            <a href="{{ url_for('index', category=cat) }}"
+               class="category-badge {% if current_category == cat %}active{% endif %}">
+                {{ cat }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Polls Grid -->
+<div class="row">
+    {% if polls %}
+        {% for poll in polls %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card poll-card shadow-sm">
+                    {% if poll.image %}
+                        <img src="{{ url_for('static', filename='uploads/polls/' + poll.image) }}"
+                             class="card-img-top" alt="Poll Image" style="height: 200px; object-fit: cover;">
+                    {% endif %}
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary">{{ poll.category }}</span>
+                            {% if poll.scheduled_for and poll.scheduled_for > now %}
+                                <span class="badge bg-warning">Scheduled</span>
+                            {% elif poll.expires_at and poll.expires_at < now %}
+                                <span class="badge bg-danger">Expired</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </div>
+
+                        <h5 class="card-title">{{ poll.title[:50] }}{% if poll.title|length > 50 %}...{% endif %}</h5>
+
+                        {% if poll.description %}
+                            <p class="card-text text-muted small">
+                                {{ poll.description[:100] }}{% if poll.description|length > 100 %}...{% endif %}
+                            </p>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-vote-yea"></i> {{ poll.votes|length }} votes
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-comments"></i> {{ poll.comments|length }}
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> by {{ poll.creator.name }}
+                            </small>
+                            <small class="text-muted">
+                                {{ poll.created_at.strftime('%b %d, %Y') }}
+                            </small>
+                        </div>
+
+                        <a href="{{ url_for('view_poll', poll_id=poll.id) }}"
+                           class="btn btn-primary w-100 mt-3">
+                            <i class="fas fa-eye"></i> View Poll
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-md-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h4>No polls found</h4>
+                <p>Be the first to create a poll!</p>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('create_poll') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus"></i> Create Poll
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('register') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-user-plus"></i> Register to Create Polls
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Quick Stats -->
+{% if polls %}
+<div class="row mt-5">
+    <div class="col-md-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-chart-line"></i> Platform Statistics</h5>
+                <div class="row text-center mt-3">
+                    <div class="col-md-3">
+                        <h3 class="text-primary">{{ polls|length }}</h3>
+                        <p class="text-muted">Active Polls</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-success">
+                            {{ polls|map(attribute='votes')|map('length')|sum if polls else 0 }}
+                        </h3>
+                        <p class="text-muted">Total Votes</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-info">
+                            {{ polls|map(attribute='comments')|map('length')|sum if polls else 0 }}
+                        </h3>
+                        <p class="text-muted">Comments</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-warning">
+                            {{ categories|length }}
+                        </h3>
+                        <p class="text-muted">Categories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .category-badge.active {
+        background: var(--secondary-color);
+        box-shadow: 0 4px 10px rgba(118, 75, 162, 0.4);
+    }
+</style>
+{% endblock %}

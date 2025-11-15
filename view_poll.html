@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}{{ poll.title }} - AI Polling System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0 mb-4">
+            {% if poll.image %}
+                <img src="{{ url_for('static', filename='uploads/polls/' + poll.image) }}"
+                     class="card-img-top" alt="Poll Image" style="max-height: 400px; object-fit: cover;">
+            {% endif %}
+
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="badge badge-custom bg-primary">{{ poll.category }}</span>
+                    {% if is_expired %}
+                        <span class="badge badge-custom bg-danger">Expired</span>
+                    {% else %}
+                        <span class="badge badge-custom bg-success">Active</span>
+                    {% endif %}
+                </div>
+
+                <h2 class="card-title mb-3">{{ poll.title }}</h2>
+
+                {% if poll.description %}
+                    <p class="card-text text-muted mb-4">{{ poll.description }}</p>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <i class="fas fa-user text-primary"></i>
+                        <strong>{{ poll.creator.name }}</strong>
+                    </div>
+                    <div>
+                        <i class="fas fa-calendar text-muted"></i>
+                        {{ poll.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </div>
+                </div>
+
+                {% if poll.expires_at %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-clock"></i>
+                        {% if is_expired %}
+                            Poll expired on {{ poll.expires_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        {% else %}
+                            Poll expires on {{ poll.expires_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <hr>
+
+                <!-- Voting Section -->
+                {% if not user_voted and not is_expired %}
+                    <h4 class="mb-3"><i class="fas fa-vote-yea"></i> Cast Your Vote</h4>
+                    <form method="POST" action="{{ url_for('vote', poll_id=poll.id) }}">
+                        {% for option in poll.options %}
+                            <div class="form-check mb-3 p-3 border rounded" style="cursor: pointer;">
+                                <input class="form-check-input" type="radio" name="option_id"
+                                       id="option{{ option.id }}" value="{{ option.id }}" required>
+                                <label class="form-check-label w-100" for="option{{ option.id }}"
+                                       style="cursor: pointer;">
+                                    {% if option.image %}
+                                        <img src="{{ url_for('static', filename='uploads/polls/' + option.image) }}"
+                                             class="img-thumbnail mb-2" style="max-width: 200px;">
+                                    {% endif %}
+                                    <h6>{{ option.option_text }}</h6>
+                                </label>
+                            </div>
+                        {% endfor %}
+
+                        {% if not current_user.is_authenticated %}
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Your Email (required)</label>
+                                <input type="email" class="form-control" id="email" name="email" required
+                                       placeholder="Enter your email to vote">
+                            </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-check-circle"></i> Submit Vote
+                        </button>
+                    </form>
+                {% else %}
+                    <!-- Results Section -->
+                    <h4 class="mb-3"><i class="fas fa-chart-bar"></i> Poll Results</h4>
+                    <div class="mb-3">
+                        <strong>Total Votes: {{ total_votes }}</strong>
+                    </div>
+
+                    {% for option in poll.options %}
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>{{ option.option_text }}</strong>
+                                <span class="badge bg-primary">
+                                    {{ option_votes[option.id].count }} votes
+                                    ({{ "%.1f"|format(option_votes[option.id].percentage) }}%)
+                                </span>
+                            </div>
+                            {% if option.image %}
+                                <img src="{{ url_for('static', filename='uploads/polls/' + option.image) }}"
+                                     class="img-thumbnail mb-2" style="max-width: 150px;">
+                            {% endif %}
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width: {{ option_votes[option.id].percentage }}%">
+                                    {{ "%.1f"|format(option_votes[option.id].percentage) }}%
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <canvas id="pollChart" width="400" height="200"></canvas>
+                {% endif %}
+
+                <hr>
+
+                <!-- Share Section -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-share-alt"></i> Share this poll</h5>
+                    <div class="btn-group" role="group">
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url }}"
+                           target="_blank" class="btn btn-outline-primary">
+                            <i class="fab fa-facebook"></i> Facebook
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?url={{ request.url }}&text={{ poll.title }}"
+                           target="_blank" class="btn btn-outline-info">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </a>
+                        <a href="https://wa.me/?text={{ poll.title }} {{ request.url }}"
+                           target="_blank" class="btn btn-outline-success">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="copyLink()">
+                            <i class="fas fa-copy"></i> Copy Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reactions Section with Guest Support -->
+                <div class="mb-4">
+                    <h5><i class="fas fa-heart"></i> Reactions</h5>
+                    <div class="d-flex flex-wrap" id="reaction-buttons">
+                        {% for reaction_type, emoji in [('like', '👍'), ('love', '❤️'),
+                                                         ('wow', '😮'), ('sad', '😢'), ('angry', '😠')] %}
+                            <button type="button"
+                                    class="reaction-btn {% if user_reaction == reaction_type %}active{% endif %}"
+                                    onclick="submitReaction('{{ reaction_type }}')">
+                                {{ emoji }} <span id="count-{{ reaction_type }}">{{ reactions[reaction_type] }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+
+                    {% if not current_user.is_authenticated %}
+                        <div class="alert alert-info mt-3" id="reaction-info">
+                            <i class="fas fa-info-circle"></i>
+                            <small>Guest users: Enter your email to react to this poll</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Export Button -->
+                <a href="{{ url_for('export_results', poll_id=poll.id) }}"
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-download"></i> Export Results as PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-comments"></i> Comments ({{ comments|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('add_comment', poll_id=poll.id) }}" class="mb-4">
+                        <div class="mb-3">
+                            <textarea class="form-control" name="comment" rows="3"
+                                      placeholder="Share your thoughts..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Post Comment
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <a href="{{ url_for('login') }}">Login</a> to comment
+                    </div>
+                {% endif %}
+
+                {% for comment in comments %}
+                    <div class="comment-box">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>{{ comment.commenter.name }}</strong>
+                                {% if comment.sentiment_score > 0 %}
+                                    <span class="badge bg-success">Positive</span>
+                                {% elif comment.sentiment_score < 0 %}
+                                    <span class="badge bg-danger">Negative</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Neutral</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                {{ comment.timestamp.strftime('%b %d, %Y at %I:%M %p') }}
+                            </small>
+                        </div>
+                        <p class="mb-2">{{ comment.comment_text }}</p>
+
+                        {% if current_user.is_authenticated %}
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        onclick="toggleReplyForm({{ comment.id }})">
+                                    <i class="fas fa-reply"></i> Reply
+                                </button>
+                                {% if current_user.id != comment.user_id %}
+                                    <form method="POST" action="{{ url_for('report_comment', comment_id=comment.id) }}"
+                                          style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-flag"></i> Report
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+
+                            <div id="reply-form-{{ comment.id }}" style="display: none;" class="mt-3">
+                                <form method="POST" action="{{ url_for('add_comment', poll_id=poll.id) }}">
+                                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                    <div class="mb-2">
+                                        <textarea class="form-control" name="comment" rows="2"
+                                                  placeholder="Write a reply..." required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        Post Reply
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+
+                        <!-- Replies -->
+                        {% if comment.replies %}
+                            <div class="ms-4 mt-3">
+                                {% for reply in comment.replies %}
+                                    <div class="comment-box bg-light">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <strong>{{ reply.commenter.name }}</strong>
+                                            <small class="text-muted">
+                                                {{ reply.timestamp.strftime('%b %d, %Y') }}
+                                            </small>
+                                        </div>
+                                        <p class="mb-0">{{ reply.comment_text }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {% if not comments %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <p>No comments yet. Be the first to comment!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Poll Stats -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Total Votes:</strong>
+                    <span class="float-end badge bg-primary">{{ total_votes }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Comments:</strong>
+                    <span class="float-end badge bg-success">{{ comments|length }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Total Reactions:</strong>
+                    <span class="float-end badge bg-warning">
+                        {{ reactions.like + reactions.love + reactions.wow + reactions.sad + reactions.angry }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Creator Info -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-user-circle"></i> Poll Creator</h6>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + poll.creator.profile_picture) }}"
+                     class="rounded-circle mb-2" width="80" height="80" alt="Creator">
+                <h6>{{ poll.creator.name }}</h6>
+                <p class="text-muted small mb-2">
+                    Member since {{ poll.creator.created_at.strftime('%B %Y') }}
+                </p>
+                <div class="d-flex justify-content-around">
+                    <div>
+                        <strong>{{ poll.creator.polls|length }}</strong>
+                        <small class="d-block text-muted">Polls</small>
+                    </div>
+                    <div>
+                        <strong>{{ poll.creator.votes|length }}</strong>
+                        <small class="d-block text-muted">Votes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal for Guest Reactions -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-envelope"></i> Enter Your Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your email to react to this poll:</p>
+                <input type="email" class="form-control" id="guestEmail"
+                       placeholder="your.email@example.com" required>
+                <div id="emailError" class="text-danger mt-2" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmReaction()">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let pendingReaction = null;
+    let emailModal = null;
+
+    // Initialize modal on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if not current_user.is_authenticated %}
+            emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+        {% endif %}
+    });
+
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Poll link copied to clipboard!');
+    }
+
+    function toggleReplyForm(commentId) {
+        const form = document.getElementById('reply-form-' + commentId);
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function submitReaction(reactionType) {
+        {% if current_user.is_authenticated %}
+            // Registered user - submit directly
+            sendReaction(reactionType, null);
+        {% else %}
+            // Guest user - show email modal
+            pendingReaction = reactionType;
+            emailModal.show();
+        {% endif %}
+    }
+
+    function confirmReaction() {
+        const email = document.getElementById('guestEmail').value.trim();
+        const errorDiv = document.getElementById('emailError');
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+            errorDiv.textContent = 'Email is required';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            errorDiv.textContent = 'Please enter a valid email address';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        errorDiv.style.display = 'none';
+        emailModal.hide();
+
+        // Send reaction with email
+        sendReaction(pendingReaction, email);
+    }
+
+    function sendReaction(reactionType, email) {
+        const formData = new FormData();
+        formData.append('reaction_type', reactionType);
+        if (email) {
+            formData.append('email', email);
+        }
+
+        fetch('{{ url_for("add_reaction", poll_id=poll.id) }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.message) {
+                    // Show success message for guest users
+                    const infoDiv = document.getElementById('reaction-info');
+                    if (infoDiv) {
+                        infoDiv.className = 'alert alert-success mt-3';
+                        infoDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                        setTimeout(() => {
+                            infoDiv.className = 'alert alert-info mt-3';
+                            infoDiv.innerHTML = '<i class="fas fa-info-circle"></i> <small>Guest users: Enter your email to react to this poll</small>';
+                        }, 3000);
+                    }
+                }
+                // Reload page to show updated reaction counts
+                location.reload();
+            } else {
+                if (data.require_email) {
+                    // This shouldn't happen if modal is working, but just in case
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+
+    // Clear email input when modal is closed
+    {% if not current_user.is_authenticated %}
+    document.getElementById('emailModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('guestEmail').value = '';
+        document.getElementById('emailError').style.display = 'none';
+    });
+    {% endif %}
+
+    {% if user_voted or is_expired %}
+    // Create chart
+    const ctx = document.getElementById('pollChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for option in poll.options %}'{{ option.option_text }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for option in poll.options %}{{ option_votes[option.id].count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b',
+                    '#fa709a', '#fee140', '#30cfd0', '#a8edea', '#fed6e3'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Login - AI Polling System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-sign-in-alt"></i> Welcome Back
+                </h2>
+                <p class="text-center text-muted mb-4">Login to continue creating and voting on polls</p>
+
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               placeholder="Enter your email address">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               placeholder="Enter your password">
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember">
+                        <label class="form-check-label" for="remember">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+
+                    <p class="text-center mb-0">
+                        Don't have an account?
+                        <a href="{{ url_for('register') }}" class="text-decoration-none">Register here</a>
+                    </p>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="text-muted small">
+                        <i class="fas fa-info-circle"></i> Demo Credentials:<br>
+                        <strong>Email:</strong> admin@polls.com<br>
+                        <strong>Password:</strong> Admin@123
+                    </p>
+
+                    <p class="text-muted small mt-3">
+                        <strong>Sample User:</strong><br>
+                        <strong>Email:</strong> john@example.com<br>
+                        <strong>Password:</strong> Test@123
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

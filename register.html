@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Register - AI Polling System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </h2>
+                <p class="text-center text-muted mb-4">Join our community and start creating polls!</p>
+
+                <form method="POST" action="{{ url_for('register') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-user"></i> Full Name
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" required
+                               placeholder="Enter your full name">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email" required
+                               placeholder="Enter your email">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">
+                            <i class="fas fa-phone"></i> Phone Number (Optional)
+                        </label>
+                        <input type="tel" class="form-control" id="phone" name="phone"
+                               placeholder="Enter your phone number">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               placeholder="Create a strong password">
+                        <div class="form-text">
+                            Password must contain: uppercase, lowercase, digit, and special character (min 8 chars)
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">
+                            <i class="fas fa-lock"></i> Confirm Password
+                        </label>
+                        <input type="password" class="form-control" id="confirm_password"
+                               name="confirm_password" required placeholder="Confirm your password">
+                    </div>
+
+                    <div class="mb-3">
+                        <div id="password-strength" class="progress" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small id="strength-text" class="text-muted"></small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
+
+                    <p class="text-center mb-0">
+                        Already have an account?
+                        <a href="{{ url_for('login') }}" class="text-decoration-none">Login here</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Password strength checker
+    document.getElementById('password').addEventListener('input', function(e) {
+        const password = e.target.value;
+        let strength = 0;
+
+        if (password.length >= 8) strength += 20;
+        if (password.length >= 12) strength += 10;
+        if (/[a-z]/.test(password)) strength += 20;
+        if (/[A-Z]/.test(password)) strength += 20;
+        if (/\d/.test(password)) strength += 15;
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength += 15;
+
+        const progressBar = document.querySelector('#password-strength .progress-bar');
+        const strengthText = document.getElementById('strength-text');
+
+        progressBar.style.width = strength + '%';
+
+        if (strength < 40) {
+            progressBar.className = 'progress-bar bg-danger';
+            strengthText.textContent = 'Weak password';
+            strengthText.className = 'text-danger';
+        } else if (strength < 70) {
+            progressBar.className = 'progress-bar bg-warning';
+            strengthText.textContent = 'Medium password';
+            strengthText.className = 'text-warning';
+        } else {
+            progressBar.className = 'progress-bar bg-success';
+            strengthText.textContent = 'Strong password';
+            strengthText.className = 'text-success';
+        }
+    });
+
+    // Password match validation
+    document.getElementById('confirm_password').addEventListener('input', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = e.target.value;
+
+        if (password !== confirmPassword) {
+            e.target.setCustomValidity('Passwords do not match');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    });
+</script>
+{% endblock %}
