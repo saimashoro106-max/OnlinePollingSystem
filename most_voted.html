@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-white mb-4">Most Voted Polls</h2>
+{% for item in polls %}
+<div class="card mb-3">
+    <div class="card-body">
+        <h5>{{ loop.index }}. {{ item.poll.question }}</h5>
+        <p>{{ item.total_votes }} votes {% if item.poll.show_creator %}| by {{ item.poll.creator_name }}{% endif %}</p>
+        <a href="{{ url_for('poll_detail', poll_id=item.poll.id) }}" class="btn btn-sm btn-primary">Vote</a>
+        <a href="{{ url_for('results', poll_id=item.poll.id) }}" class="btn btn-sm btn-secondary">Results</a>
+    </div>
+</div>
+{% endfor %}
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Home</a>
+{% endblock %}

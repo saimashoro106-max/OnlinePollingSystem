@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Create Poll - AI Polling System{% endblock %}
+
+{% block content %}
+<h2 class="text-center mb-4">
+    <i class="fas fa-plus-circle"></i> Create New Poll
+</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <form id="createPollForm" method="POST" action="{{ url_for('create_poll') }}" enctype="multipart/form-data">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Poll Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Poll Question *</label>
+                        <input type="text" class="form-control" id="title" name="title" required
+                               placeholder="What do you want to ask?">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                                  placeholder="Add more details about your poll..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="poll_image" class="form-label">Poll Image (Optional)</label>
+                        <input type="file" class="form-control" id="poll_image" name="poll_image"
+                               accept="image/*">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Poll Options</h5>
+                </div>
+                <div class="card-body">
+                    <div id="options-container">
+                        <div class="option-item mb-3">
+                            <label class="form-label">Option 1 *</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="options[]" required
+                                       placeholder="Enter option text">
+                                <input type="file" class="form-control" name="option_images[]"
+                                       accept="image/*">
+                            </div>
+                        </div>
+
+                        <div class="option-item mb-3">
+                            <label class="form-label">Option 2 *</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="options[]" required
+                                       placeholder="Enter option text">
+                                <input type="file" class="form-control" name="option_images[]"
+                                       accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="addOption()">
+                        <i class="fas fa-plus"></i> Add Another Option
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Poll Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="expiration" class="form-label">Poll Expiration</label>
+                        <select class="form-select" id="expiration" name="expiration" onchange="toggleCustomExpiration()">
+                            <option value="24">24 Hours (Default)</option>
+                            <option value="48">48 Hours</option>
+                            <option value="168">1 Week</option>
+                            <option value="720">1 Month</option>
+                            <option value="custom">Custom</option>
+                            <option value="never">Never Expires</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="custom-expiration" style="display: none;">
+                        <label for="custom_hours" class="form-label">Custom Hours</label>
+                        <input type="number" class="form-control" id="custom_hours" name="custom_hours"
+                               min="1" placeholder="Enter hours">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="scheduled_date" class="form-label">Schedule Poll (Optional)</label>
+                        <input type="datetime-local" class="form-control" id="scheduled_date" name="scheduled_date">
+                        <div class="form-text">Leave empty to publish immediately</div>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="is_masked" name="is_masked">
+                        <label class="form-check-label" for="is_masked">
+                            <i class="fas fa-mask"></i> Masked Poll (Hide results until voting)
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="is_anonymous_voting"
+                               name="is_anonymous_voting">
+                        <label class="form-check-label" for="is_anonymous_voting">
+                            <i class="fas fa-user-secret"></i> Allow Anonymous Voting
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-paper-plane"></i> Create Poll
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let optionCount = 2;
+
+    function addOption() {
+        optionCount++;
+        const container = document.getElementById('options-container');
+        const optionItem = document.createElement('div');
+        optionItem.className = 'option-item mb-3';
+        optionItem.innerHTML = `
+            <label class="form-label">Option ${optionCount} *</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="options[]" placeholder="Enter option text">
+                <input type="file" class="form-control" name="option_images[]" accept="image/*">
+                <button type="button" class="btn btn-danger" onclick="removeOption(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(optionItem);
+    }
+
+    function removeOption(btn) {
+        btn.closest('.option-item').remove();
+    }
+
+    function toggleCustomExpiration() {
+        const select = document.getElementById('expiration');
+        const customDiv = document.getElementById('custom-expiration');
+        if (select.value === 'custom') {
+            customDiv.style.display = 'block';
+        } else {
+            customDiv.style.display = 'none';
+        }
+    }
+
+    // -------------------- Front-End Validation --------------------
+    document.getElementById('createPollForm').addEventListener('submit', function(event) {
+        let valid = true;
+
+        // Reset previous highlights
+        document.querySelectorAll('.form-control').forEach(el => el.style.borderColor = '');
+
+        // Check poll title
+        const title = document.getElementById('title');
+        if (!title.value.trim()) {
+            title.style.borderColor = 'red';
+            valid = false;
+        }
+
+        // Check all options
+        const options = document.querySelectorAll('input[name="options[]"]');
+        let filledOptions = 0;
+        options.forEach(opt => {
+            if (!opt.value.trim()) {
+                opt.style.borderColor = 'red';
+            } else {
+                filledOptions++;
+            }
+        });
+
+        if (filledOptions < 2) {
+            alert('Please enter at least 2 options.');
+            valid = false;
+        }
+
+        if (!valid) {
+            event.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

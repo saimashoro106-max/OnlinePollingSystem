@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - AI Polling System{% endblock %}
+
+{% block content %}
+<h2 class="text-center mb-5">
+    <i class="fas fa-trophy"></i> Leaderboard & Trending Polls
+</h2>
+
+<div class="row">
+    <!-- Top Voters -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-lg border-0 h-100">
+            <div class="card-header bg-primary text-white text-center">
+                <h5 class="mb-0"><i class="fas fa-vote-yea"></i> Top Voters</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for user, vote_count in top_voters %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark me-2">🥇</span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary me-2">🥈</span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-danger me-2">🥉</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark me-2">{{ loop.index }}</span>
+                                    {% endif %}
+                                    <span>{{ user.name }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ vote_count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if not top_voters %}
+                    <p class="text-center text-muted mt-3">No data yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Poll Creators -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-lg border-0 h-100">
+            <div class="card-header bg-success text-white text-center">
+                <h5 class="mb-0"><i class="fas fa-poll"></i> Top Creators</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for user, poll_count in top_creators %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark me-2">🥇</span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary me-2">🥈</span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-danger me-2">🥉</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark me-2">{{ loop.index }}</span>
+                                    {% endif %}
+                                    <span>{{ user.name }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-success rounded-pill">{{ poll_count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if not top_creators %}
+                    <p class="text-center text-muted mt-3">No data yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Commenters -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-lg border-0 h-100">
+            <div class="card-header bg-info text-white text-center">
+                <h5 class="mb-0"><i class="fas fa-comments"></i> Top Commenters</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for user, comment_count in top_commenters %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    {% if loop.index == 1 %}
+                                        <span class="badge bg-warning text-dark me-2">🥇</span>
+                                    {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary me-2">🥈</span>
+                                    {% elif loop.index == 3 %}
+                                        <span class="badge bg-danger me-2">🥉</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark me-2">{{ loop.index }}</span>
+                                    {% endif %}
+                                    <span>{{ user.name }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-info rounded-pill">{{ comment_count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if not top_commenters %}
+                    <p class="text-center text-muted mt-3">No data yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Polls -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card shadow-lg border-0 h-100">
+            <div class="card-header bg-warning text-dark text-center">
+                <h5 class="mb-0"><i class="fas fa-fire"></i> Trending</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for poll, vote_count in trending_polls %}
+                        <a href="{{ url_for('view_poll', poll_id=poll.id) }}"
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        {% if loop.index == 1 %}
+                                            <span class="badge bg-warning text-dark me-2">🔥</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark me-2">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <h6 class="mb-1">{{ poll.title[:25] }}{% if poll.title|length > 25 %}...{% endif %}</h6>
+                                    <small class="text-muted">by {{ poll.creator.name }}</small>
+                                </div>
+                                <span class="badge bg-warning text-dark">{{ vote_count }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+
+                {% if not trending_polls %}
+                    <p class="text-center text-muted mt-3">No polls yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Challenge -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-lg border-0 bg-gradient"
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body text-white text-center py-5">
+                <h3 class="mb-3"><i class="fas fa-star"></i> Weekly Challenge</h3>
+                <p class="lead mb-4">Participate actively and climb to the top!</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h4><i class="fas fa-vote-yea"></i></h4>
+                        <p class="mb-0">Cast 10 votes</p>
+                        <small>Earn "Active Voter" badge</small>
+                    </div>
+                    <div class="col-md-4">
+                        <h4><i class="fas fa-poll"></i></h4>
+                        <p class="mb-0">Create 5 polls</p>
+                        <small>Earn "Poll Creator" badge</small>
+                    </div>
+                    <div class="col-md-4">
+                        <h4><i class="fas fa-comments"></i></h4>
+                        <p class="mb-0">Post 20 comments</p>
+                        <small>Earn "Top Commenter" badge</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Overview -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Platform Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h2 class="text-primary">{{ trending_polls|length }}</h2>
+                        <p class="text-muted">Active Polls</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h2 class="text-success">
+                            {% set total_votes = namespace(value=0) %}
+                            {% for poll, votes in trending_polls %}
+                                {% set total_votes.value = total_votes.value + votes %}
+                            {% endfor %}
+                            {{ total_votes.value }}
+                        </h2>
+                        <p class="text-muted">Total Votes</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h2 class="text-info">{{ top_commenters|length + top_voters|length + top_creators|length }}</h2>
+                        <p class="text-muted">Active Users</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h2 class="text-warning">8</h2>
+                        <p class="text-muted">Categories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .list-group-item {
+        transition: all 0.3s;
+    }
+
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .bg-gradient {
+        color: white !important;
+    }
+</style>
+
+{% endblock %}

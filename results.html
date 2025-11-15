@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h3>{{ poll.question }}</h3>
+                {% if poll.show_creator %}<small>by {{ poll.creator_name }}</small>{% endif %}
+            </div>
+            <div class="card-body">
+                <h5>Total: {{ total_votes }} votes</h5>
+                {% for result in results %}
+                <div class="mb-3">
+                    <strong>{{ result.option }}</strong> - {{ result.votes }} votes ({{ result.percentage }}%)
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" style="width: {{ result.percentage }}%;">{{ result.percentage }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+                <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

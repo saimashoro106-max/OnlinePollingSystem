@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - {{ current_user.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-lg border-0 mb-4">
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_picture) }}"
+                     class="profile-avatar mb-3" alt="Profile Picture">
+
+                <h4>{{ current_user.name }}</h4>
+                <p class="text-muted">{{ current_user.email }}</p>
+                {% if current_user.phone %}
+                    <p class="text-muted"><i class="fas fa-phone"></i> {{ current_user.phone }}</p>
+                {% endif %}
+
+                <p class="small text-muted">
+                    <i class="fas fa-calendar"></i> Joined {{ current_user.created_at.strftime('%B %d, %Y') }}
+                </p>
+
+                <hr>
+
+                <!-- Update Profile Picture -->
+                <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="mb-3">
+                    <input type="hidden" name="action" value="upload_picture">
+                    <div class="mb-2">
+                        <label for="profile_picture" class="form-label">Change Profile Picture</label>
+                        <input type="file" class="form-control" id="profile_picture"
+                               name="profile_picture" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </form>
+
+                <!-- Update Name -->
+                <form method="POST" action="{{ url_for('profile') }}">
+                    <input type="hidden" name="action" value="update_name">
+                    <div class="mb-2">
+                        <label for="name" class="form-label">Change Name</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                               value="{{ current_user.name }}"
+                               {% if current_user.name_changed %}disabled{% endif %}>
+                    </div>
+                    {% if not current_user.name_changed %}
+                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                            <i class="fas fa-edit"></i> Update Name (One Time Only)
+                        </button>
+                    {% else %}
+                        <p class="small text-muted">Name can only be changed once</p>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-trophy"></i> My Badges</h6>
+            </div>
+            <div class="card-body">
+                {% if user_badges %}
+                    {% for badge in user_badges %}
+                        <div class="badge-item">
+                            <i class="fas fa-award"></i> {{ badge.badge_type }}
+                            <br>
+                            <small>Earned: {{ badge.earned_at.strftime('%b %d, %Y') }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted">
+                        <i class="fas fa-trophy fa-2x mb-2"></i><br>
+                        No badges yet. Keep participating!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white shadow-sm">
+                    <div class="card-body text-center">
+                        <h2>{{ user_polls|length }}</h2>
+                        <p class="mb-0"><i class="fas fa-poll"></i> Polls Created</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white shadow-sm">
+                    <div class="card-body text-center">
+                        <h2>{{ user_votes }}</h2>
+                        <p class="mb-0"><i class="fas fa-vote-yea"></i> Votes Cast</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white shadow-sm">
+                    <div class="card-body text-center">
+                        <h2>{{ user_comments }}</h2>
+                        <p class="mb-0"><i class="fas fa-comments"></i> Comments</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Polls -->
+        <div class="card shadow-lg border-0 mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> My Polls</h5>
+            </div>
+            <div class="card-body">
+                {% if user_polls %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Votes</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for poll in user_polls %}
+                                    <tr>
+                                        <td>{{ poll.title[:30] }}{% if poll.title|length > 30 %}...{% endif %}</td>
+                                        <td><span class="badge bg-secondary">{{ poll.category }}</span></td>
+                                        <td>{{ poll.votes|length }}</td>
+                                        <td>
+                                            {% if poll.expires_at and poll.expires_at < now %}
+                                                <span class="badge bg-danger">Expired</span>
+                                            {% elif poll.scheduled_for and poll.scheduled_for > now %}
+                                                <span class="badge bg-warning">Scheduled</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ poll.created_at.strftime('%b %d, %Y') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('view_poll', poll_id=poll.id) }}"
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('export_results', poll_id=poll.id) }}"
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-poll fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">You haven't created any polls yet.</p>
+                        <a href="{{ url_for('create_poll') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Your First Poll
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Activity Summary -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Activity Summary</h6>
+            </div>
+            <div class="card-body">
+                <h6>Progress to Next Badge:</h6>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Active Voter (10 votes)</span>
+                        <span>{{ user_votes }}/10</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ [user_votes/10*100, 100]|min }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Poll Creator (5 polls)</span>
+                        <span>{{ user_polls|length }}/5</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ [user_polls|length/5*100, 100]|min }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Top Commenter (20 comments)</span>
+                        <span>{{ user_comments }}/20</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: {{ [user_comments/20*100, 100]|min }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
